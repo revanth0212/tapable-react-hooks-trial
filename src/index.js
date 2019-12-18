@@ -1,32 +1,37 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { SyncHook } from "tapable";
+import { logCount as counterHook, manipulateCount } from "./tapableHooks";
 
 import ReactDOM from "react-dom";
 
-const counterHook = new SyncHook();
+counterHook.tap("logger", count => {
+  console.log("logger", count);
+});
 
-counterHook.tap("Outside", count => {
-  console.log("Outside", count);
+manipulateCount.tap("checking on count outside", count => {
+  console.log("checking outside", count);
+  return count + 5;
 });
 
 const useCounter = () => {
   const [counter, setCounter] = useState(0);
 
   useEffect(() => {
-    counterHook.tap("Inside", count => {
-      console.log("Inside", count);
+    manipulateCount.tap("adding 2 to count", count => {
+      setCounter(count);
     });
   }, []);
 
   const addCount = useCallback(() => {
-    setCounter(counter + 1);
-    counterHook.call(counter + 1);
-  }, [counter, setCounter]);
+    const newCount = counter + 1;
+    counterHook.call(newCount);
+    manipulateCount.call(newCount);
+  }, [counter]);
 
   const reduceCount = useCallback(() => {
-    setCounter(counter - 1);
-    counterHook.call(counter - 1);
-  }, [counter, setCounter]);
+    const newCount = counter - 1;
+    counterHook.call(newCount);
+    manipulateCount.call(newCount);
+  }, [counter]);
 
   return [counter, { addCount, reduceCount }];
 };
